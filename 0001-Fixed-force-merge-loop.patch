@@ -1,0 +1,43 @@
+From d62b90c922dc5a9cfdcecaa6fd48511817d143a4 Mon Sep 17 00:00:00 2001
+From: Ben Williams <bewilliams@nvidia.com>
+Date: Tue, 3 Sep 2024 11:12:44 -0700
+Subject: [PATCH] Fixed force-merge loop
+
+---
+ src/graph/topo.cc | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/src/graph/topo.cc b/src/graph/topo.cc
+index f66a552d4..b601b7818 100644
+--- a/src/graph/topo.cc
++++ b/src/graph/topo.cc
+@@ -954,18 +954,16 @@ ncclResult_t ncclTopoForceMerge(ncclComm_t comm, struct ncclXml* xml, char* str,
+     }
+ 
+     ncclNetVDeviceProps_t vProps = {0};
+-    for (int i = 0; i < nUserIfs; i++) {
+-      for (int d = 0; d < nPhysDevs; d++) {
+-        if (matchIfList(propsList[d].name, propsList[d].port, userIfs, nUserIfs, 1)) {
+-          vProps.devs[vProps.ndevs++] = d;
+-        }
++    for (int d = 0; d < nPhysDevs; d++) {
++      if (matchIfList(propsList[d].name, propsList[d].port, userIfs, nUserIfs, 1)) {
++        vProps.devs[vProps.ndevs++] = d;
+       }
++    }
+ 
+-      if (vProps.ndevs != nUserIfs) {
+-        WARN("TOPO/NET : Only matched %d devices, %d requested from %s",
+-          vProps.ndevs, nUserIfs, semi);
+-        return ncclInvalidUsage;
+-      }
++    if (vProps.ndevs != nUserIfs) {
++      WARN("TOPO/NET : Only matched %d devices, %d requested from %s",
++        vProps.ndevs, nUserIfs, semi);
++      return ncclInvalidUsage;
+     }
+ 
+     if (vProps.ndevs > NCCL_NET_MAX_DEVS_PER_NIC) {
+-- 
+2.25.1
+
